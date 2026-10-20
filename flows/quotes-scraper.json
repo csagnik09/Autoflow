@@ -1,0 +1,68 @@
+{
+  "name": "Quotes to Scrape: log in and collect quotes",
+  "description": "Scrapes the first two pages of quotes.toscrape.com (a site built for practicing scraping) after logging in.",
+  "variables": {
+    "pages_user": "autoflow"
+  },
+  "settings": {},
+  "steps": [
+    {
+      "action": "goto",
+      "url": "https://quotes.toscrape.com/login"
+    },
+    {
+      "action": "fill",
+      "selector": "#username",
+      "value": "{{pages_user}}"
+    },
+    {
+      "action": "fill",
+      "selector": "#password",
+      "value": "anything"
+    },
+    {
+      "action": "click",
+      "selector": "input[type=submit]"
+    },
+    {
+      "action": "assert_visible",
+      "selector": "text=Logout"
+    },
+    {
+      "action": "extract_text",
+      "selector": ".quote .text",
+      "var": "quotes_page_1",
+      "all": true
+    },
+    {
+      "action": "extract_text",
+      "selector": ".quote .author",
+      "var": "authors_page_1",
+      "all": true
+    },
+    {
+      "action": "click",
+      "selector": "li.next > a"
+    },
+    {
+      "action": "wait_for_url",
+      "value": "/page/2/"
+    },
+    {
+      "action": "extract_text",
+      "selector": ".quote .text",
+      "var": "quotes_page_2",
+      "all": true
+    },
+    {
+      "action": "evaluate",
+      "script": "() => [...document.querySelectorAll('.tag')].map(t => t.textContent)",
+      "var": "tags_page_2"
+    },
+    {
+      "action": "screenshot",
+      "name": "page-2",
+      "full_page": true
+    }
+  ]
+}

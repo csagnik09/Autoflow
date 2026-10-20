@@ -1,0 +1,47 @@
+{
+  "name": "Hacker News: grab today's headlines",
+  "description": "Collects the front-page headline titles and links, then saves a full-page screenshot and PDF.",
+  "variables": {},
+  "settings": {},
+  "steps": [
+    {
+      "action": "goto",
+      "url": "https://news.ycombinator.com/"
+    },
+    {
+      "action": "assert_title",
+      "value": "Hacker News"
+    },
+    {
+      "action": "extract_text",
+      "selector": ".titleline > a",
+      "var": "headlines",
+      "all": true
+    },
+    {
+      "action": "extract_attr",
+      "selector": ".titleline > a",
+      "attr": "href",
+      "var": "top_link"
+    },
+    {
+      "action": "evaluate",
+      "script": "() => document.querySelectorAll('.athing').length",
+      "var": "story_count"
+    },
+    {
+      "action": "screenshot",
+      "name": "front-page",
+      "full_page": true
+    },
+    {
+      "action": "pdf",
+      "name": "front-page",
+      "continue_on_error": true
+    },
+    {
+      "action": "log",
+      "value": "{{story_count}} stories, top link {{top_link}}"
+    }
+  ]
+}

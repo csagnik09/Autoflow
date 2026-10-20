@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AutoFlow — Playwright automation studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">▸▸</span>
+      <span>AutoFlow</span>
+      <span class="brand-sub">playwright · pytest</span>
+    </div>
+
+    <input id="flowName" class="flow-name" placeholder="Flow name" aria-label="Flow name" />
+    <span id="dirtyDot" class="dirty-dot" title="Unsaved changes" hidden></span>
+
+    <div class="topbar-actions">
+      <button id="btnRecord" class="btn ghost" title="Open a browser and record your clicks (playwright codegen)">● Record</button>
+      <button id="btnExport" class="btn ghost" title="Download as a standalone pytest file">⤓ Export .py</button>
+      <button id="btnSave" class="btn ghost" title="Save (Ctrl+S)">Save</button>
+
+      <div class="run-group">
+        <button id="btnRunOpts" class="btn ghost icon" title="Run options" aria-haspopup="true">⚙</button>
+        <button id="btnRun" class="btn primary" title="Run (Ctrl+Enter)">▶ Run</button>
+        <button id="btnStop" class="btn danger" hidden>■ Stop</button>
+      </div>
+    </div>
+
+    <div id="runOpts" class="popover" hidden>
+      <label>Browser
+        <select id="optBrowser">
+          <option value="chromium">Chromium</option>
+          <option value="firefox">Firefox</option>
+          <option value="webkit">WebKit (Safari)</option>
+          <option value="chrome">Installed Chrome</option>
+          <option value="msedge">Installed Edge</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="optHeaded" /> Show browser window</label>
+      <label>Slow motion <span class="muted" id="slowmoVal">0 ms</span>
+        <input type="range" id="optSlowmo" min="0" max="1500" step="50" value="0" />
+      </label>
+      <label>Default step timeout (ms)
+        <input type="number" id="optTimeout" value="10000" min="500" step="500" />
+      </label>
+      <label class="check"><input type="checkbox" id="optTrace" /> Record trace (open with <code>playwright show-trace</code>)</label>
+      <label class="check"><input type="checkbox" id="optVideo" /> Record video</label>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- ── sidebar ─────────────────────────────── -->
+    <aside class="sidebar">
+      <section>
+        <div class="side-head">
+          <h2>Flows</h2>
+          <button id="btnNewFlow" class="btn tiny">+ New</button>
+        </div>
+        <ul id="flowList" class="flow-list"></ul>
+      </section>
+      <section class="history">
+        <div class="side-head"><h2>Run history</h2></div>
+        <ul id="runList" class="run-list"></ul>
+      </section>
+      <div id="health" class="health"></div>
+    </aside>
+
+    <!-- ── editor ──────────────────────────────── -->
+    <main class="editor">
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="steps" role="tab">Steps <span id="stepCount" class="count"></span></button>
+        <button class="tab" data-tab="vars" role="tab">Variables &amp; settings</button>
+        <button class="tab" data-tab="json" role="tab">JSON</button>
+        <button class="tab" data-tab="python" role="tab">Python</button>
+      </nav>
+
+      <section id="tab-steps" class="tab-panel active">
+        <textarea id="flowDesc" class="flow-desc" rows="1" placeholder="What does this flow do? (optional)"></textarea>
+        <ol id="steps" class="steps"></ol>
+        <div class="empty-state" id="emptySteps" hidden>
+          <p>No steps yet. Add one below, or <button class="linkish" id="btnRecord2">record</button> them by clicking through a site.</p>
+        </div>
+        <div class="palette">
+          <div class="palette-head">Add step</div>
+          <div id="palette" class="palette-groups"></div>
+        </div>
+      </section>
+
+      <section id="tab-vars" class="tab-panel">
+        <h3>Variables</h3>
+        <p class="muted">Use them in any field as <code>{{name}}</code>. Built-ins: <code>{{now}}</code>, <code>{{timestamp}}</code>, <code>{{random}}</code>, <code>{{env.NAME}}</code>. Steps like “Save text to variable” add more while the flow runs.</p>
+        <table class="kv">
+          <thead><tr><th>Name</th><th>Value</th><th></th></tr></thead>
+          <tbody id="varRows"></tbody>
+        </table>
+        <button id="btnAddVar" class="btn tiny">+ Variable</button>
+
+        <h3>Browser settings</h3>
+        <div class="settings-grid">
+          <label>Viewport width <input type="number" data-setting="width" placeholder="1280" /></label>
+          <label>Viewport height <input type="number" data-setting="height" placeholder="800" /></label>
+          <label>Locale <input data-setting="locale" placeholder="en-US" /></label>
+          <label class="wide">User agent <input data-setting="user_agent" placeholder="(browser default)" /></label>
+        </div>
+
+        <h3>Danger zone</h3>
+        <button id="btnDeleteFlow" class="btn danger-outline">Delete this flow</button>
+      </section>
+
+      <section id="tab-json" class="tab-panel">
+        <p class="muted">The flow exactly as stored in <code>flows/</code>. Edit and apply, or paste one from elsewhere.</p>
+        <textarea id="jsonEditor" class="code" spellcheck="false"></textarea>
+        <div class="row"><button id="btnApplyJson" class="btn">Apply JSON</button><span id="jsonError" class="error-text"></span></div>
+      </section>
+
+      <section id="tab-python" class="tab-panel">
+        <p class="muted">The standalone pytest file this flow exports to (uses <code>pytest-playwright</code>'s <code>page</code> fixture). It updates live as you edit.</p>
+        <pre id="pyPreview" class="code"></pre>
+        <h3>Import from code</h3>
+        <p class="muted">Paste Python recorded by <code>playwright codegen</code> to append its actions as steps.</p>
+        <textarea id="importCode" class="code short" spellcheck="false" placeholder='page.goto("https://example.com")&#10;page.get_by_role("link", name="More information").click()'></textarea>
+        <div class="row"><button id="btnImport" class="btn">Append as steps</button><span id="importMsg" class="muted"></span></div>
+      </section>
+    </main>
+
+    <!-- ── run panel ───────────────────────────── -->
+    <aside class="runpanel">
+      <div class="run-head">
+        <div>
+          <div class="eyebrow">Run</div>
+          <div id="runTitle" class="run-title">Not run yet</div>
+        </div>
+        <span id="runBadge" class="badge idle">idle</span>
+      </div>
+      <div class="progress"><div id="progressBar"></div></div>
+      <div id="runStats" class="run-stats"></div>
+
+      <details open class="panel-section">
+        <summary>Extracted data <span id="varCount" class="count"></span></summary>
+        <div id="runVars" class="run-vars"><p class="muted small">Values saved by data steps appear here.</p></div>
+      </details>
+
+      <details open class="panel-section">
+        <summary>Screenshots &amp; files <span id="fileCount" class="count"></span></summary>
+        <div id="runFiles" class="run-files"><p class="muted small">Screenshots, PDFs, traces and videos appear here.</p></div>
+      </details>
+
+      <details open class="panel-section grow">
+        <summary>Console</summary>
+        <pre id="runLog" class="run-log"></pre>
+      </details>
+    </aside>
+  </div>
+
+  <!-- recorder dialog -->
+  <dialog id="recordDialog">
+    <form method="dialog" class="dialog-body">
+      <h3>Record steps</h3>
+      <p class="muted">A browser and the Playwright Inspector open on this computer. Click through the site, then <strong>close the browser window</strong> — the recorded actions are added to this flow.</p>
+      <label>Start URL <input id="recordUrl" placeholder="https://example.com" /></label>
+      <div class="row end">
+        <button value="cancel" class="btn ghost">Cancel</button>
+        <button id="btnStartRecord" value="ok" class="btn primary">Open recorder</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="lightbox" class="lightbox" hidden><img alt="" /><div class="lightbox-cap"></div></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

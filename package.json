@@ -1,0 +1,13 @@
+{
+  "name": "autoflow",
+  "version": "1.0.0",
+  "description": "Visual browser-automation studio: build flows in the browser, run them with Playwright + pytest.",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "setup": "pip install -r requirements.txt && python -m playwright install chromium"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}
